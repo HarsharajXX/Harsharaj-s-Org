@@ -1,0 +1,6 @@
+{
+  "name": "NOHAJ",
+  "description": "Tradition deserves a wider world. Premium Northeast Indian traditional fashion & handwoven textile marketplace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
