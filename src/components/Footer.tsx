@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { NohajLogo } from './NohajLogo';
+import { getBackendStatus } from '../lib/supabase';
 
 export const Footer: React.FC = () => {
+  const status = getBackendStatus();
   return (
     <footer className="bg-[#25231F] text-[#E6DED2] pt-16 pb-10 border-t border-[#3A3630]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,7 +67,11 @@ export const Footer: React.FC = () => {
 
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#777168]">
           <p>© 2026 NOHAJ. All rights reserved.</p>
-          <p>Demo storefront — sample listings shown for preview.</p>
+          <p>
+            {status.mode === 'live'
+              ? 'Environment: Live Supabase PostgreSQL & Auth'
+              : 'Environment: Demo Mode (Sample listings shown — Supabase credentials not configured)'}
+          </p>
         </div>
       </div>
     </footer>

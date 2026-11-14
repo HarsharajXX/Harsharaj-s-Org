@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Heart, ArrowLeft } from 'lucide-react';
-import { PRODUCTS } from '../data/mockData';
+import { useCatalogue } from '../hooks/useCatalogue';
 import { formatINR } from '../utils/format';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
@@ -11,10 +11,37 @@ export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addToCart, toggleWishlist, isInWishlist } = useStore();
+  const { products, loading, mode, error } = useCatalogue();
 
-  const product = PRODUCTS.find((p) => p.slug === slug);
   const [activeImage, setActiveImage] = useState(0);
   const [careModalOpen, setCareModalOpen] = useState(false);
+  const [selectedSizeState, setSelectedSizeState] = useState<string | null>(null);
+  const [selectedColourState, setSelectedColourState] = useState<string | null>(null);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <p className="text-sm text-[#777168]">Loading piece details...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <h1 className="font-serif text-3xl text-[#25231F]">Unable to load piece</h1>
+        <p className="mt-3 text-sm text-[#A65F46]">{error}</p>
+        <Link
+          to="/shop"
+          className="inline-block mt-6 px-6 py-3 bg-[#25231F] text-[#FAF9F6] text-xs uppercase tracking-widest"
+        >
+          Return to Shop
+        </Link>
+      </div>
+    );
+  }
+
+  const product = products.find((p) => p.slug === slug);
 
   if (!product) {
     return (
@@ -31,12 +58,48 @@ export const ProductDetailPage: React.FC = () => {
   }
 
   const saved = isInWishlist(product.id);
-  const related = PRODUCTS.filter(
-    (p) => p.id !== product.id && (p.community_id === product.community_id || p.is_featured)
-  ).slice(0, 3);
+  const related = products
+    .filter((p) => p.id !== product.id && (p.community_id === product.community_id || p.is_featured))
+    .slice(0, 3);
+
+  const variants = product.variants || [];
+  const selectedSize =
+    selectedSizeState && product.sizes.includes(selectedSizeState)
+      ? selectedSizeState
+      : product.sizes[0] || 'Free Size';
+  const selectedColour =
+    selectedColourState && product.colours.includes(selectedColourState)
+      ? selectedColourState
+      : product.colours[0] || 'Natural';
+
+  const matchedVariant =
+    variants.length > 0
+      ? variants.find((v) => v.size === selectedSize && v.colour === selectedColour) ||
+        variants.find((v) => v.size === selectedSize) ||
+        variants.find((v) => v.colour === selectedColour) ||
+        variants[0]
+      : undefined;
+
+  const effectivePrice = matchedVariant?.price_override ?? product.price;
+  const effectiveStock = matchedVariant ? matchedVariant.stock_quantity : product.stock_quantity;
+  const isOutOfStock =
+    (variants.length === 0 && product.availability === 'Out of Stock') ||
+    (typeof effectiveStock === 'number' && effectiveStock <= 0);
+
+  const handleAddToBag = () => {
+    addToCart(
+      product,
+      1,
+      matchedVariant?.size ?? selectedSize,
+      matchedVariant?.colour ?? selectedColour,
+      matchedVariant?.id,
+      effectivePrice
+    );
+  };
 
   const handleBuyNow = () => {
-    addToCart(product, 1, product.sizes[0], product.colours[0]);
+    if (isOutOfStock) return;
+    handleAddToBag();
     navigate('/checkout');
   };
 
@@ -93,10 +156,13 @@ export const ProductDetailPage: React.FC = () => {
                 {product.name}
               </h1>
               <p className="mt-3 text-xl font-medium text-[#25231F] tabular-nums">
-                {formatINR(product.price)}
+                {formatINR(effectivePrice)}
               </p>
               <p className="mt-1 text-xs text-[#777168]">
-                {product.availability} · {product.dispatch_time}
+                {isOutOfStock ? 'Out of Stock' : product.availability} · {product.dispatch_time}
+                {typeof effectiveStock === 'number' && effectiveStock > 0 && effectiveStock <= 5
+                  ? ` · Only ${effectiveStock} left`
+                  : ''}
               </p>
             </div>
 
@@ -104,20 +170,75 @@ export const ProductDetailPage: React.FC = () => {
               {product.description}
             </p>
 
+            {/* Variant Selectors */}
+            {(product.sizes.length > 1 || product.colours.length > 1 || variants.length > 0) && (
+              <div className="space-y-4 border-t border-[#D8CBB9] pt-4">
+                {product.sizes.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-[#777168] mb-2">
+                      Size: <span className="text-[#25231F]">{selectedSize}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.sizes.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setSelectedSizeState(size)}
+                          className={`px-3 py-1.5 text-xs border transition-colors ${
+                            selectedSize === size
+                              ? 'border-[#25231F] bg-[#25231F] text-[#FAF9F6]'
+                              : 'border-[#D8CBB9] bg-[#FAF9F6] text-[#25231F] hover:border-[#25231F]'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {product.colours.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-[#777168] mb-2">
+                      Colour: <span className="text-[#25231F]">{selectedColour}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.colours.map((colour) => (
+                        <button
+                          key={colour}
+                          type="button"
+                          onClick={() => setSelectedColourState(colour)}
+                          className={`px-3 py-1.5 text-xs border transition-colors ${
+                            selectedColour === colour
+                              ? 'border-[#25231F] bg-[#25231F] text-[#FAF9F6]'
+                              : 'border-[#D8CBB9] bg-[#FAF9F6] text-[#25231F] hover:border-[#25231F]'
+                          }`}
+                        >
+                          {colour}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Primary Actions */}
             <div className="space-y-3 pt-2">
               <button
                 type="button"
-                onClick={() => addToCart(product, 1, product.sizes[0], product.colours[0])}
-                className="w-full py-3.5 bg-[#25231F] text-[#FAF9F6] text-xs uppercase tracking-widest hover:bg-[#A65F46] transition-colors"
+                disabled={isOutOfStock}
+                onClick={handleAddToBag}
+                className="w-full py-3.5 bg-[#25231F] text-[#FAF9F6] text-xs uppercase tracking-widest hover:bg-[#A65F46] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add to Bag
+                {isOutOfStock ? 'Out of Stock' : 'Add to Bag'}
               </button>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
+                  disabled={isOutOfStock}
                   onClick={handleBuyNow}
-                  className="py-3 border border-[#25231F] text-[#25231F] text-xs uppercase tracking-widest hover:bg-[#25231F] hover:text-[#FAF9F6] transition-colors"
+                  className="py-3 border border-[#25231F] text-[#25231F] text-xs uppercase tracking-widest hover:bg-[#25231F] hover:text-[#FAF9F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Buy Now
                 </button>
@@ -144,7 +265,7 @@ export const ProductDetailPage: React.FC = () => {
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-[#777168]">Size</span>
-                <span className="text-[#25231F] text-right">{product.sizes.join(', ')}</span>
+                <span className="text-[#25231F] text-right">{selectedSize}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-[#777168]">Measurements</span>
@@ -152,7 +273,7 @@ export const ProductDetailPage: React.FC = () => {
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-[#777168]">Colour</span>
-                <span className="text-[#25231F] text-right">{product.colours.join(', ')}</span>
+                <span className="text-[#25231F] text-right">{selectedColour}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-[#777168]">Seller</span>
@@ -177,7 +298,9 @@ export const ProductDetailPage: React.FC = () => {
               </div>
               <p>
                 <strong className="text-[#25231F] uppercase tracking-wider">Shipping & Returns:</strong>{' '}
-                Complimentary shipping on orders above ₹5,000. Sample demo listing — no live payment or dispatch.
+                {mode === 'live'
+                  ? 'Complimentary shipping on orders above ₹5,000. Cash on Delivery available; online payment gateway pending configuration.'
+                  : 'Complimentary shipping on orders above ₹5,000. Sample demo listing — no live payment or dispatch.'}
               </p>
             </div>
           </div>

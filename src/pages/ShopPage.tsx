@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { COMMUNITIES, PRODUCTS } from '../data/mockData';
+import { useCatalogue } from '../hooks/useCatalogue';
 import { ProductCard } from '../components/ProductCard';
 
 export const ShopPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialOccasion = searchParams.get('occasion') || '';
   const initialSort = searchParams.get('sort') || 'featured';
+  const { communities, products, loading, mode, error } = useCatalogue();
 
   const [search, setSearch] = useState('');
   const [selectedCommunity, setSelectedCommunity] = useState<string>('all');
@@ -19,13 +20,13 @@ export const ShopPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>(initialSort);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const categories = Array.from(new Set(PRODUCTS.map((p) => p.category_name)));
-  const materials = Array.from(new Set(PRODUCTS.map((p) => p.material)));
-  const methods = Array.from(new Set(PRODUCTS.map((p) => p.production_method)));
-  const availabilities = Array.from(new Set(PRODUCTS.map((p) => p.availability)));
+  const categories = Array.from(new Set(products.map((p) => p.category_name)));
+  const materials = Array.from(new Set(products.map((p) => p.material)));
+  const methods = Array.from(new Set(products.map((p) => p.production_method)));
+  const availabilities = Array.from(new Set(products.map((p) => p.availability)));
 
   const filtered = useMemo(() => {
-    let list = [...PRODUCTS];
+    let list = [...products];
 
     if (initialOccasion) {
       list = list.filter((p) => p.occasion.includes(initialOccasion));
@@ -66,6 +67,7 @@ export const ShopPage: React.FC = () => {
     }
     return list;
   }, [
+    products,
     initialOccasion,
     search,
     selectedCommunity,
@@ -112,7 +114,7 @@ export const ShopPage: React.FC = () => {
           className="w-full px-3 py-2 bg-[#FAF9F6] border border-[#D8CBB9] text-sm text-[#25231F] focus:outline-none"
         >
           <option value="all">All Communities</option>
-          {COMMUNITIES.map((c) => (
+          {communities.map((c) => (
             <option key={c.id} value={c.slug}>{c.name}</option>
           ))}
         </select>
@@ -213,7 +215,7 @@ export const ShopPage: React.FC = () => {
       <div className="border-b border-[#D8CBB9] pb-8 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-[#777168] mb-2">
-            NOHAJ Marketplace · Sample Catalogue
+            {mode === 'live' ? 'NOHAJ Marketplace' : 'NOHAJ Marketplace · Sample Catalogue (Demo Mode)'}
           </p>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#25231F]">
             Explore the Collection.
@@ -258,7 +260,16 @@ export const ShopPage: React.FC = () => {
 
         {/* Product Grid */}
         <div className="lg:col-span-3">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="py-16 text-center border border-[#D8CBB9] bg-[#FAF9F6] p-8">
+              <p className="text-sm text-[#777168]">Loading collection...</p>
+            </div>
+          ) : error ? (
+            <div className="py-16 text-center border border-[#A65F46] bg-[#FAF9F6] p-8">
+              <p className="font-serif text-xl text-[#25231F]">Unable to load products</p>
+              <p className="mt-2 text-sm text-[#A65F46]">{error}</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="py-16 text-center border border-[#D8CBB9] bg-[#FAF9F6] p-8">
               <p className="font-serif text-xl text-[#25231F]">No matching pieces found.</p>
               <p className="mt-2 text-sm text-[#777168]">

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 export const BecomeSellerPage: React.FC = () => {
-  const { showToast } = useStore();
+  const { isLiveMode, showToast } = useStore();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
     businessName: '',
@@ -17,12 +19,40 @@ export const BecomeSellerPage: React.FC = () => {
     additionalInfo: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.fullName.trim() || !form.businessName.trim() || !form.phone.trim() || !form.email.trim() || !form.location.trim()) {
       showToast('Please fill in all required fields.', 'error');
       return;
     }
+
+    if (isLiveMode && isSupabaseConfigured && supabase) {
+      setSubmitting(true);
+      const { error } = await supabase.from('seller_applications').insert({
+        applicant_name: form.fullName.trim(),
+        business_name: form.businessName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        location: form.location.trim(),
+        categories: form.categories
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean),
+        community_association: form.community.trim() || null,
+        description: form.description.trim(),
+        social_link: form.socialLink.trim() || null,
+      });
+      setSubmitting(false);
+
+      if (error) {
+        showToast(error.message, 'error');
+        return;
+      }
+      setSubmitted(true);
+      showToast('Seller application submitted.');
+      return;
+    }
+
     setSubmitted(true);
     showToast('Seller application submitted (Demo Mode).');
   };
@@ -59,7 +89,8 @@ export const BecomeSellerPage: React.FC = () => {
         <div className="p-10 border border-[#D8CBB9] bg-[#FAF9F6] text-center max-w-2xl mx-auto">
           <h2 className="font-serif text-2xl text-[#25231F]">Application Received</h2>
           <p className="mt-3 text-sm text-[#514B43]">
-            Thank you, {form.fullName}. Your application for <strong>{form.businessName}</strong> has been recorded in demo mode. Our team reviews all seller applications carefully.
+            Thank you, {form.fullName}. Your application for <strong>{form.businessName}</strong>{' '}
+            {isLiveMode ? 'has been recorded.' : 'has been recorded in demo mode.'} Our team reviews all seller applications carefully.
           </p>
           <button
             type="button"
@@ -172,9 +203,10 @@ export const BecomeSellerPage: React.FC = () => {
 
           <button
             type="submit"
-            className="px-8 py-3.5 bg-[#25231F] text-[#FAF9F6] text-xs uppercase tracking-widest hover:bg-[#A65F46] transition-colors"
+            disabled={submitting}
+            className="px-8 py-3.5 bg-[#25231F] text-[#FAF9F6] text-xs uppercase tracking-widest hover:bg-[#A65F46] transition-colors disabled:opacity-60"
           >
-            Submit Application
+            {submitting ? 'Submitting...' : 'Submit Application'}
           </button>
         </form>
       )}

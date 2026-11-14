@@ -37,7 +37,7 @@ export interface MultiVendorSellerOrder {
   commissionAmount: number;
   sellerPayoutAmount: number;
   fulfilmentStatus: SellerFulfilmentStatus;
-  codReconciliationStatus: 'not_applicable' | 'awaiting_collection' | 'collected' | 'settled';
+  codReconciliationStatus: 'not_applicable' | 'awaiting_collection' | 'collected' | 'remitted' | 'settled';
   trackingNumber?: string;
 }
 

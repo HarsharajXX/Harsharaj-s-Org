@@ -1,11 +1,7 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import type { SellerAccountStatus, UserRole } from '../types';
 
-export type UserRole =
-  | 'customer'
-  | 'seller'
-  | 'super_admin'
-  | 'operations_admin'
-  | 'content_admin';
+export type { UserRole, SellerAccountStatus };
 
 export interface AuthUser {
   id: string;
@@ -20,7 +16,8 @@ export interface AuthUser {
     sellerType: string;
     state: string;
     district: string;
-    accountStatus: 'pending_email_verification' | 'active';
+    emailVerified: boolean;
+    accountStatus: SellerAccountStatus;
     payoutVerificationStatus: 'unverified' | 'pending' | 'verified';
   };
 }
@@ -105,6 +102,7 @@ export const authService = {
             sellerType: params.sellerType,
             state: params.state,
             district: params.district,
+            emailVerified: false,
             accountStatus: 'pending_email_verification',
             payoutVerificationStatus: 'unverified',
           },
@@ -147,7 +145,10 @@ export const authService = {
               sellerType: params.sellerType,
               state: params.state,
               district: params.district,
-              accountStatus: data.user.email_confirmed_at ? 'active' : 'pending_email_verification',
+              emailVerified: Boolean(data.user.email_confirmed_at),
+              accountStatus: data.user.email_confirmed_at
+                ? 'pending_approval'
+                : 'pending_email_verification',
               payoutVerificationStatus: 'unverified',
             },
           }
@@ -178,8 +179,9 @@ export const authService = {
                   sellerType: 'Weaver Collective',
                   state: 'Assam',
                   district: 'Kamrup',
-                  accountStatus: 'active',
-                  payoutVerificationStatus: 'unverified',
+                  emailVerified: true,
+                  accountStatus: 'active' as SellerAccountStatus,
+                  payoutVerificationStatus: 'unverified' as const,
                 },
               }
             : {}),
@@ -203,6 +205,57 @@ export const authService = {
 
     const roles = (roleRows?.map((r) => r.role as UserRole) || ['customer']);
 
+    if (
+      params.expectedRole &&
+      !roles.includes(params.expectedRole) &&
+      !roles.includes('super_admin')
+    ) {
+      await supabase.auth.signOut();
+      return {
+        user: null,
+        error: `This account does not have ${params.expectedRole.replace(/_/g, ' ')} access.`,
+      };
+    }
+
+    let sellerProfile: AuthUser['sellerProfile'] | undefined;
+    if (roles.includes('seller')) {
+      const { data: sp } = await supabase
+        .from('seller_profiles')
+        .select(
+          'business_name, seller_type, state, district, email_verified, account_status, payout_verification_status'
+        )
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (sp) {
+        const validStatuses: SellerAccountStatus[] = [
+          'pending_email_verification',
+          'pending_approval',
+          'active',
+          'suspended',
+          'rejected',
+        ];
+        const accountStatus = validStatuses.includes(sp.account_status as SellerAccountStatus)
+          ? (sp.account_status as SellerAccountStatus)
+          : 'pending_email_verification';
+
+        sellerProfile = {
+          storeName: sp.business_name,
+          sellerType: sp.seller_type || 'Weaver',
+          state: sp.state || '',
+          district: sp.district || '',
+          emailVerified: Boolean(sp.email_verified ?? data.user.email_confirmed_at),
+          accountStatus,
+          payoutVerificationStatus:
+            sp.payout_verification_status === 'verified'
+              ? 'verified'
+              : sp.payout_verification_status === 'pending'
+                ? 'pending'
+                : 'unverified',
+        };
+      }
+    }
+
     return {
       user: {
         id: data.user.id,
@@ -211,6 +264,7 @@ export const authService = {
         roles,
         emailVerified: Boolean(data.user.email_confirmed_at),
         isDemo: false,
+        sellerProfile,
       },
     };
   },

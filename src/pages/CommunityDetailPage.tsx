@@ -1,13 +1,37 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { COMMUNITIES, PRODUCTS } from '../data/mockData';
+import { useCatalogue } from '../hooks/useCatalogue';
 import { ProductCard } from '../components/ProductCard';
 
 export const CommunityDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [sortBy, setSortBy] = useState('featured');
+  const { communities, products: allProducts, loading, mode, error } = useCatalogue();
 
-  const community = COMMUNITIES.find((c) => c.slug === slug);
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <p className="text-sm text-[#777168]">Loading collection...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <h1 className="font-serif text-3xl text-[#25231F]">Unable to load collection</h1>
+        <p className="mt-3 text-sm text-[#A65F46]">{error}</p>
+        <Link
+          to="/communities"
+          className="inline-block mt-6 px-6 py-3 bg-[#25231F] text-[#FAF9F6] text-xs uppercase tracking-widest"
+        >
+          Browse Communities
+        </Link>
+      </div>
+    );
+  }
+
+  const community = communities.find((c) => c.slug === slug);
 
   if (!community) {
     return (
@@ -23,11 +47,13 @@ export const CommunityDetailPage: React.FC = () => {
     );
   }
 
-  const products = PRODUCTS.filter((p) => p.community_slug === community.slug).sort((a, b) => {
-    if (sortBy === 'price-asc') return a.price - b.price;
-    if (sortBy === 'price-desc') return b.price - a.price;
-    return 0;
-  });
+  const products = allProducts
+    .filter((p) => p.community_slug === community.slug)
+    .sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price;
+      if (sortBy === 'price-desc') return b.price - a.price;
+      return 0;
+    });
 
   return (
     <div>
@@ -79,7 +105,9 @@ export const CommunityDetailPage: React.FC = () => {
         {products.length === 0 ? (
           <div className="p-12 border border-[#D8CBB9] bg-[#FAF9F6] text-center">
             <p className="font-serif text-xl text-[#25231F]">
-              Sample listings for {community.name} are being curated.
+              {mode === 'live'
+                ? `No published pieces in the ${community.name} collection yet.`
+                : `Sample listings for ${community.name} are being curated.`}
             </p>
             <Link
               to="/shop"

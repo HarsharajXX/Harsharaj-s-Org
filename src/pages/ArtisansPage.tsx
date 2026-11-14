@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { ARTISANS, PRODUCTS } from '../data/mockData';
+import { ARTISANS } from '../data/mockData';
+import { useCatalogue } from '../hooks/useCatalogue';
 import { ProductCard } from '../components/ProductCard';
 
 export const ArtisansPage: React.FC = () => {
@@ -62,6 +63,7 @@ export const ArtisansPage: React.FC = () => {
 
 export const ArtisanDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { products } = useCatalogue();
   const artisan = ARTISANS.find((a) => a.slug === slug);
 
   if (!artisan) {
@@ -78,7 +80,7 @@ export const ArtisanDetailPage: React.FC = () => {
     );
   }
 
-  const artisanProducts = PRODUCTS.filter((p) => artisan.product_ids.includes(p.id));
+  const artisanProducts = products.filter((p) => artisan.product_ids.includes(p.id));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">

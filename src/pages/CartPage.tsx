@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useStore } from '../context/StoreContext';
+import { getCartItemKey, useStore } from '../context/StoreContext';
 import { formatINR } from '../utils/format';
 
 export const CartPage: React.FC = () => {
@@ -30,70 +30,79 @@ export const CartPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 divide-y divide-[#D8CBB9] border-t border-b border-[#D8CBB9]">
-            {cart.map((item) => (
-              <div key={item.product.id} className="py-6 flex gap-5">
-                <Link to={`/product/${item.product.slug}`} className="w-24 aspect-[3/4] shrink-0 border border-[#D8CBB9] bg-[#E6DED2]">
-                  <img
-                    src={item.product.images[0]}
-                    alt={item.product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </Link>
-                <div className="flex-1 flex flex-col justify-between">
-                  <div className="flex justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-wider text-[#777168]">
-                        {item.product.community_name}
-                      </p>
-                      <Link
-                        to={`/product/${item.product.slug}`}
-                        className="font-serif text-lg text-[#25231F] hover:text-[#A65F46]"
-                      >
-                        {item.product.name}
-                      </Link>
-                      <p className="text-xs text-[#777168] mt-1">
-                        {item.selectedSize} · {item.selectedColour}
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium text-[#25231F] tabular-nums">
-                      {formatINR(item.product.price * item.quantity)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="inline-flex items-center border border-[#D8CBB9] bg-[#FAF9F6]">
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="p-2 text-[#25231F] hover:bg-[#E6DED2]"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="px-4 text-xs tabular-nums text-[#25231F]">
-                        {item.quantity}
+            {cart.map((item) => {
+              const itemKey = getCartItemKey(
+                item.product.id,
+                item.variantId,
+                item.selectedSize,
+                item.selectedColour
+              );
+              const unitPrice = item.unitPrice ?? item.product.price;
+              return (
+                <div key={itemKey} className="py-6 flex gap-5">
+                  <Link to={`/product/${item.product.slug}`} className="w-24 aspect-[3/4] shrink-0 border border-[#D8CBB9] bg-[#E6DED2]">
+                    <img
+                      src={item.product.images[0]}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </Link>
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-wider text-[#777168]">
+                          {item.product.community_name}
+                        </p>
+                        <Link
+                          to={`/product/${item.product.slug}`}
+                          className="font-serif text-lg text-[#25231F] hover:text-[#A65F46]"
+                        >
+                          {item.product.name}
+                        </Link>
+                        <p className="text-xs text-[#777168] mt-1">
+                          {item.selectedSize} · {item.selectedColour}
+                        </p>
+                      </div>
+                      <span className="text-sm font-medium text-[#25231F] tabular-nums">
+                        {formatINR(unitPrice * item.quantity)}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        className="p-2 text-[#25231F] hover:bg-[#E6DED2]"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeFromCart(item.product.id)}
-                      className="inline-flex items-center gap-1.5 text-xs text-[#777168] hover:text-[#A65F46]"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Remove
-                    </button>
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="inline-flex items-center border border-[#D8CBB9] bg-[#FAF9F6]">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.product.id, item.quantity - 1, itemKey)}
+                          className="p-2 text-[#25231F] hover:bg-[#E6DED2]"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="px-4 text-xs tabular-nums text-[#25231F]">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.product.id, item.quantity + 1, itemKey)}
+                          className="p-2 text-[#25231F] hover:bg-[#E6DED2]"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.product.id, itemKey)}
+                        className="inline-flex items-center gap-1.5 text-xs text-[#777168] hover:text-[#A65F46]"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="lg:col-span-4">

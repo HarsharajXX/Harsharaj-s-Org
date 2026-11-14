@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { COMMUNITIES } from '../data/mockData';
+import { useCatalogue } from '../hooks/useCatalogue';
 
 export const CommunitiesPage: React.FC = () => {
+  const { communities, loading, error } = useCatalogue();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
       <div className="max-w-2xl mb-12">
@@ -18,8 +20,15 @@ export const CommunitiesPage: React.FC = () => {
         </p>
       </div>
 
+      {loading ? (
+        <p className="text-sm text-[#777168]">Loading communities...</p>
+      ) : error ? (
+        <p className="text-sm text-[#A65F46]">{error}</p>
+      ) : communities.length === 0 ? (
+        <p className="text-sm text-[#777168]">No communities found.</p>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {COMMUNITIES.map((comm) => (
+        {communities.map((comm) => (
           <Link
             key={comm.id}
             to={`/community/${comm.slug}`}
@@ -53,6 +62,7 @@ export const CommunitiesPage: React.FC = () => {
           </Link>
         ))}
       </div>
+      )}
     </div>
   );
 };

@@ -4,18 +4,18 @@ import { ArrowRight } from 'lucide-react';
 import {
   ARTISAN_LOOM_IMAGE,
   COCOON_IMAGE,
-  COMMUNITIES,
   HERO_IMAGE,
   OCCASIONS,
-  PRODUCTS,
 } from '../data/mockData';
 import { ProductCard } from '../components/ProductCard';
 import { useStore } from '../context/StoreContext';
+import { useCatalogue } from '../hooks/useCatalogue';
 
 export const HomePage: React.FC = () => {
   const [email, setEmail] = useState('');
   const { showToast } = useStore();
-  const featuredProducts = PRODUCTS.filter((p) => p.is_featured).slice(0, 6);
+  const { communities, products, loading, mode } = useCatalogue();
+  const featuredProducts = products.filter((p) => p.is_featured !== false).slice(0, 6);
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +107,12 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {COMMUNITIES.map((comm) => (
+            {loading ? (
+              <p className="text-sm text-[#777168] col-span-full py-6">Loading communities...</p>
+            ) : communities.length === 0 ? (
+              <p className="text-sm text-[#777168] col-span-full py-6">No communities published yet.</p>
+            ) : (
+              communities.map((comm) => (
               <Link
                 key={comm.id}
                 to={`/community/${comm.slug}`}
@@ -133,7 +138,8 @@ export const HomePage: React.FC = () => {
                   </span>
                 </div>
               </Link>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </section>
@@ -144,7 +150,7 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[#777168] mb-2">
-                Sample Catalogue
+                {mode === 'live' ? 'Curated Collection' : 'Sample Catalogue (Demo Mode)'}
               </p>
               <h2 className="font-serif text-3xl sm:text-4xl text-[#25231F]">
                 Curated for you.
@@ -158,11 +164,17 @@ export const HomePage: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-12">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {loading ? (
+            <p className="text-sm text-[#777168] py-8">Loading featured collection...</p>
+          ) : featuredProducts.length === 0 ? (
+            <p className="text-sm text-[#777168] py-8">No published products available yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-12">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { PRODUCTS, COMMUNITIES } from '../data/mockData';
+import { useCatalogue } from '../hooks/useCatalogue';
 import { formatINR } from '../utils/format';
 
 export const SearchOverlay: React.FC = () => {
   const { isSearchOpen, setIsSearchOpen } = useStore();
+  const { products, communities } = useCatalogue();
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
 
@@ -14,7 +15,7 @@ export const SearchOverlay: React.FC = () => {
 
   const trimmed = query.trim().toLowerCase();
   const matches = trimmed
-    ? PRODUCTS.filter(
+    ? products.filter(
         (p) =>
           p.name.toLowerCase().includes(trimmed) ||
           p.community_name.toLowerCase().includes(trimmed) ||
@@ -72,7 +73,7 @@ export const SearchOverlay: React.FC = () => {
               Explore Communities
             </p>
             <div className="flex flex-wrap gap-2">
-              {COMMUNITIES.map((c) => (
+              {communities.map((c) => (
                 <Link
                   key={c.id}
                   to={`/community/${c.slug}`}

@@ -1,13 +1,15 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+const metaEnv = (import.meta as { env?: Record<string, string | undefined> }).env;
+
 const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
+  metaEnv?.VITE_SUPABASE_URL ||
+  metaEnv?.NEXT_PUBLIC_SUPABASE_URL ||
   '';
 
 const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  metaEnv?.VITE_SUPABASE_ANON_KEY ||
+  metaEnv?.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   '';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);

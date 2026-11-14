@@ -4,7 +4,7 @@ import { authService } from '../services/auth';
 import { useStore } from '../context/StoreContext';
 
 export const SellerLoginPage: React.FC = () => {
-  const { loginDemo, showToast } = useStore();
+  const { setSessionUser, loginDemo, showToast } = useStore();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,7 +19,12 @@ export const SellerLoginPage: React.FC = () => {
       showToast(res.error || 'Unable to sign in.', 'error');
       return;
     }
-    loginDemo(res.user.email, res.user.fullName);
+    if (res.user.isDemo) {
+      loginDemo(res.user.email, res.user.fullName, res.user.roles);
+    } else {
+      setSessionUser(res.user);
+      showToast(`Signed in as ${res.user.fullName}.`);
+    }
     navigate('/seller/dashboard');
   };
 
