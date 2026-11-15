@@ -1,10 +1,10 @@
 import { Artisan, Community, Product, Seller } from '../types';
+import HERO_IMAGE from '../assets/images/hero_assamese_editorial_1794420904584.jpg';
+import COCOON_IMAGE from '../assets/images/cocoon_silk_story_1794420905449.jpg';
+import ARTISAN_LOOM_IMAGE from '../assets/images/artisan_weaver_loom_1794420905504.jpg';
+import MEKHELA_IMAGE from '../assets/images/product_mekhela_sador_1794420905862.jpg';
+import DOKHONA_IMAGE from '../assets/images/product_bodo_dokhona_1794420905004.jpg';
 
-export const HERO_IMAGE = '/src/assets/images/hero_assamese_editorial_1794420904584.jpg';
-export const COCOON_IMAGE = '/src/assets/images/cocoon_silk_story_1794420905449.jpg';
-export const ARTISAN_LOOM_IMAGE = '/src/assets/images/artisan_weaver_loom_1794420905504.jpg';
-export const MEKHELA_IMAGE = '/src/assets/images/product_mekhela_sador_1794420905862.jpg';
-export const DOKHONA_IMAGE = '/src/assets/images/product_bodo_dokhona_1794420905004.jpg';
 
 export const COMMUNITIES: Community[] = [
   {
