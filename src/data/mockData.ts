@@ -5,6 +5,8 @@ import ARTISAN_LOOM_IMAGE from '../assets/images/artisan_weaver_loom_17944209055
 import MEKHELA_IMAGE from '../assets/images/product_mekhela_sador_1794420905862.jpg';
 import DOKHONA_IMAGE from '../assets/images/product_bodo_dokhona_1794420905004.jpg';
 
+export { HERO_IMAGE, COCOON_IMAGE, ARTISAN_LOOM_IMAGE, MEKHELA_IMAGE, DOKHONA_IMAGE };
+
 
 export const COMMUNITIES: Community[] = [
   {
